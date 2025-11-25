@@ -1,32 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Universal URL Launcher</title>
+  <meta charset="UTF-8" />
+  <title>Multi-Tab URL Launcher</title>
   <style>
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
+      height: 100%;
       font-family: sans-serif;
-      background: #2f3242;
+      background: #1e1f2b;
       color: #fff;
+      overflow: hidden;
+    }
+    #controls {
       display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-    header {
       padding: 10px;
-      background: #1f202a;
-      text-align: center;
+      background: #2f3242;
+      align-items: center;
     }
-    input[type="text"] {
-      width: 60%;
+    #urlInput {
+      flex: 1;
       padding: 8px;
       border-radius: 4px;
       border: none;
       margin-right: 10px;
     }
     button {
-      padding: 8px 16px;
+      padding: 8px 12px;
       background: #68c950;
       color: #fff;
       font-weight: bold;
@@ -37,39 +38,104 @@
     button:hover {
       background: #5a5c6c;
     }
+    #tabs {
+      display: flex;
+      background: #1f202a;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .tab {
+      padding: 8px 12px;
+      background: #3a3c4d;
+      margin-right: 2px;
+      cursor: pointer;
+      border-top-left-radius: 4px;
+      border-top-right-radius: 4px;
+      display: flex;
+      align-items: center;
+    }
+    .tab.active {
+      background: #68c950;
+      color: #000;
+    }
+    .tab span {
+      margin-right: 8px;
+    }
+    .tab button {
+      background: transparent;
+      color: inherit;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
     #frameWrap {
-      flex: 1;
-      position: relative;
+      position: absolute;
+      top: 80px;
+      left: 0;
+      right: 0;
+      bottom: 0;
     }
     iframe {
-      position: absolute;
-      top: 0; left: 0;
       width: 100%;
       height: 100%;
       border: none;
+      display: none;
+    }
+    iframe.active {
+      display: block;
     }
   </style>
 </head>
 <body>
-  <header>
+  <div id="controls">
     <input id="urlInput" type="text" placeholder="Enter a URL (https://...)" />
-    <button onclick="launch()">Open</button>
-  </header>
+    <button onclick="addTab()">Add Tab</button>
+  </div>
+  <div id="tabs"></div>
   <div id="frameWrap"></div>
 
   <script>
-    function launch() {
-      var url = document.getElementById("urlInput").value.trim();
+    let tabCount = 0;
+    function addTab() {
+      let url = document.getElementById("urlInput").value.trim();
       if (!url) return;
-      // Add protocol if missing
-      if (!/^https?:\/\//i.test(url)) {
-        url = "https://" + url;
-      }
-      var frameWrap = document.getElementById("frameWrap");
-      frameWrap.innerHTML = "";
-      var iframe = document.createElement("iframe");
+      if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+
+      const id = "tab" + (++tabCount);
+
+      // Create tab button
+      const tab = document.createElement("div");
+      tab.className = "tab";
+      tab.id = id + "-btn";
+      tab.innerHTML = `<span>${url}</span><button onclick="closeTab('${id}')">×</button>`;
+      tab.onclick = () => activateTab(id);
+      document.getElementById("tabs").appendChild(tab);
+
+      // Create iframe
+      const iframe = document.createElement("iframe");
       iframe.src = url;
-      frameWrap.appendChild(iframe);
+      iframe.id = id;
+      document.getElementById("frameWrap").appendChild(iframe);
+
+      activateTab(id);
+    }
+
+    function activateTab(id) {
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll("iframe").forEach(f => f.classList.remove("active"));
+      document.getElementById(id + "-btn").classList.add("active");
+      document.getElementById(id).classList.add("active");
+    }
+
+    function closeTab(id) {
+      const tabBtn = document.getElementById(id + "-btn");
+      const iframe = document.getElementById(id);
+      if (tabBtn.classList.contains("active")) {
+        const next = tabBtn.previousElementSibling || tabBtn.nextElementSibling;
+        if (next) activateTab(next.id.replace("-btn", ""));
+      }
+      tabBtn.remove();
+      iframe.remove();
     }
   </script>
 </body>
